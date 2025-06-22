@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Paper Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        
+        select, input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+        
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        .btn-pdf {
+            background: #e63946;
+            margin-top: 1rem;
+        }
+        
+        .btn-pdf:hover {
+            background: #c1121f;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .questions-container {
+            margin-top: 2rem;
+        }
+        
+        .section {
+            margin-bottom: 2rem;
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+            color: var(--secondary);
+        }
+        
+        .question-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .question-text {
+            flex: 1;
+        }
+        
+        .question-marks {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .mark-btn {
+            background: white;
+            border: 1px solid #ddd;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .mark-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .mark-btn.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .preview-container {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .preview-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .preview-school {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .preview-instructions {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .preview-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .preview-question {
+            margin-bottom: 0.5rem;
+            display: flex;
+        }
+        
+        .preview-question-number {
+            margin-right: 0.5rem;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .question-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .question-marks {
+                margin-top: 0.5rem;
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-file-alt"></i> Question Paper Generator</h1>
+            <p>Create customized question papers for your students</p>
+        </header>
+        
+        <div class="card" id="initial-form">
+            <div class="form-group">
+                <label for="class-select">Select Class</label>
+                <select id="class-select" class="form-control">
+                    <option value="">-- Select Class --</option>
+                    <option value="6">Class 6</option>
+                    <option value="7">Class 7</option>
+                    <option value="8">Class 8</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="subject-select">Select Subject</label>
+                <select id="subject-select" class="form-control">
+                    <option value="">-- Select Subject --</option>
+                    <option value="science">Science</option>
+                </select>
+            </div>
+            
+            <button id="start-btn" class="btn btn-block">Start Creating</button>
+        </div>
+        
+        <div class="card hidden" id="details-form">
+            <div class="form-group">
+                <label for="school-name">School Name</label>
+                <input type="text" id="school-name" placeholder="Enter school name">
+            </div>
+            
+            <div class="form-group">
+                <label for="instructions">Exam Instructions</label>
+                <textarea id="instructions" rows="3" placeholder="Enter exam instructions"></textarea>
+            </div>
+            
+            <button id="generate-questions-btn" class="btn btn-block">Generate Questions</button>
+        </div>
+        
+        <div class="questions-container hidden" id="questions-section">
+            <div class="section">
+                <h3 class="section-title">Section A (1 Mark Questions)</h3>
+                <div id="one-mark-questions"></div>
+            </div>
+            
+            <div class="section">
+                <h3 class="section-title">Section B (2 Mark Questions)</h3>
+                <div id="two-mark-questions"></div>
+            </div>
+            
+            <div class="section">
+                <h3 class="section-title">Section C (3 Mark Questions)</h3>
+                <div id="three-mark-questions"></div>
+            </div>
+            
+            <div class="section">
+                <h3 class="section-title">Section D (4 Mark Questions)</h3>
+                <div id="four-mark-questions"></div>
+            </div>
+            
+            <div class="section">
+                <h3 class="section-title">Section E (5 Mark Questions)</h3>
+                <div id="five-mark-questions"></div>
+            </div>
+            
+            <button id="preview-btn" class="btn btn-block">Preview Question Paper</button>
+        </div>
+        
+        <div class="preview-container hidden" id="preview-section">
+            <div id="pdf-content">
+                <div class="preview-header">
+                    <h2 id="preview-title">Science Question Paper</h2>
+                    <div class="preview-school" id="preview-school">School Name</div>
+                    <div class="preview-instructions" id="preview-instructions">Exam instructions will appear here</div>
+                </div>
+                
+                <div id="preview-sections"></div>
+            </div>
+            
+            <button id="download-pdf" class="btn btn-block btn-pdf"><i class="fas fa-file-pdf"></i> Download as PDF</button>
+            <button id="back-to-edit" class="btn btn-block">Back to Editing</button>
+        </div>
+    </div>
+
+   <script>
+        // DOM Elements (unchanged)
+        const initialForm = document.getElementById('initial-form');
+        const detailsForm = document.getElementById('details-form');
+        const questionsSection = document.getElementById('questions-section');
+        const previewSection = document.getElementById('preview-section');
+        const startBtn = document.getElementById('start-btn');
+        const generateQuestionsBtn = document.getElementById('generate-questions-btn');
+        const previewBtn = document.getElementById('preview-btn');
+        const backToEditBtn = document.getElementById('back-to-edit');
+        const downloadPdfBtn = document.getElementById('download-pdf');
+        
+        // Variables to store user selections
+        let selectedClass = '';
+        let selectedSubject = '';
+        let selectedQuestions = {
+            1: [],
+            2: [],
+            3: [],
+            4: [],
+            5: []
+        };
+
+        // Event Listeners (unchanged)
+        startBtn.addEventListener('click', startCreating);
+        generateQuestionsBtn.addEventListener('click', generateQuestions);
+        previewBtn.addEventListener('click', previewQuestionPaper);
+        backToEditBtn.addEventListener('click', backToEditing);
+        downloadPdfBtn.addEventListener('click', downloadAsPdf);
+
+        // API Configuration
+        const API_BASE_URL = 'https://question-backend-ey40.onrender.com/api';
+
+        // Modified Functions
+        async function fetchQuestions(classLevel, subject) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/questions?class=${classLevel}&subject=${subject}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching questions:', error);
+                // Return a fallback empty structure
+                return {
+                    1: [],
+                    2: [],
+                    3: [],
+                    4: [],
+                    5: []
+                };
+            }
+        }
+
+        function startCreating() {
+            selectedClass = document.getElementById('class-select').value;
+            selectedSubject = document.getElementById('subject-select').value;
+            
+            if (!selectedClass || !selectedSubject) {
+                alert('Please select both class and subject');
+                return;
+            }
+            
+            initialForm.classList.add('hidden');
+            detailsForm.classList.remove('hidden');
+        }
+
+        async function generateQuestions() {
+            const schoolName = document.getElementById('school-name').value;
+            const instructions = document.getElementById('instructions').value;
+            
+            if (!schoolName || !instructions) {
+                alert('Please enter school name and instructions');
+                return;
+            }
+            
+            detailsForm.classList.add('hidden');
+            questionsSection.classList.remove('hidden');
+            
+            // Load questions from API
+            await loadQuestions();
+        }
+
+        async function loadQuestions() {
+            try {
+                const questions = await fetchQuestions(selectedClass, selectedSubject);
+                
+                // Clear previous questions
+                document.getElementById('one-mark-questions').innerHTML = '';
+                document.getElementById('two-mark-questions').innerHTML = '';
+                document.getElementById('three-mark-questions').innerHTML = '';
+                document.getElementById('four-mark-questions').innerHTML = '';
+                document.getElementById('five-mark-questions').innerHTML = '';
+                
+                // Reset selected questions
+                selectedQuestions = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+                
+                // Load questions for each mark category
+                for (let mark = 1; mark <= 5; mark++) {
+                    const containerId = `${mark}-mark-questions`;
+                    const container = document.getElementById(containerId.replace('-', '-'));
+                    
+                    if (questions[mark] && questions[mark].length > 0) {
+                        questions[mark].forEach((question, index) => {
+                            const questionElement = createQuestionElement(question, mark, index);
+                            container.appendChild(questionElement);
+                        });
+                    } else {
+                        container.innerHTML = '<p>No questions available for this section</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading questions:', error);
+                alert('Failed to load questions. Please try again later.');
+            }
+        }
+
+        // [All other functions remain exactly the same:]
+        // createQuestionElement()
+        // previewQuestionPaper()
+        // backToEditing()
+        // downloadAsPdf()
+    </script>
+</body>
+</html>
+
+
