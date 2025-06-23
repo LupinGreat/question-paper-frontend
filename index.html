@@ -332,8 +332,8 @@
         </div>
     </div>
 
-   <script>
-        // DOM Elements (unchanged)
+    <script>
+        // DOM Elements
         const initialForm = document.getElementById('initial-form');
         const detailsForm = document.getElementById('details-form');
         const questionsSection = document.getElementById('questions-section');
@@ -355,25 +355,56 @@
             5: []
         };
 
-        // Event Listeners (unchanged)
-        startBtn.addEventListener('click', startCreating);
-        generateQuestionsBtn.addEventListener('click', generateQuestions);
-        previewBtn.addEventListener('click', previewQuestionPaper);
-        backToEditBtn.addEventListener('click', backToEditing);
-        downloadPdfBtn.addEventListener('click', downloadAsPdf);
-
-        // API Configuration
+        // API Configuration - UPDATE THIS WITH YOUR ACTUAL BACKEND URL
         const API_BASE_URL = 'https://question-backend-ey40.onrender.com/api';
 
-        // Modified Functions
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Document ready');
+            
+            // Event Listeners
+            startBtn.addEventListener('click', startCreating);
+            generateQuestionsBtn.addEventListener('click', generateQuestions);
+            previewBtn.addEventListener('click', previewQuestionPaper);
+            backToEditBtn.addEventListener('click', backToEditing);
+            downloadPdfBtn.addEventListener('click', downloadAsPdf);
+            
+            // Debug: Test backend connection
+            testBackendConnection();
+        });
+
+        // Test backend connection
+        async function testBackendConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/healthcheck`);
+                if (response.ok) {
+                    console.log('Backend connection successful');
+                } else {
+                    console.error('Backend connection failed:', response.status);
+                }
+            } catch (error) {
+                console.error('Error testing backend connection:', error);
+            }
+        }
+
+        // Fetch questions from API
         async function fetchQuestions(classLevel, subject) {
+            console.log(`Fetching questions for class ${classLevel}, subject ${subject}`);
+            
             try {
                 const response = await fetch(`${API_BASE_URL}/questions?class=${classLevel}&subject=${subject}`);
-                if (!response.ok) throw new Error('Network response was not ok');
-                return await response.json();
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Received questions:', data);
+                return data;
             } catch (error) {
                 console.error('Error fetching questions:', error);
-                // Return a fallback empty structure
+                alert(`Failed to load questions: ${error.message}`);
                 return {
                     1: [],
                     2: [],
@@ -398,6 +429,8 @@
         }
 
         async function generateQuestions() {
+            console.log('Generate questions button clicked');
+            
             const schoolName = document.getElementById('school-name').value;
             const instructions = document.getElementById('instructions').value;
             
@@ -409,11 +442,17 @@
             detailsForm.classList.add('hidden');
             questionsSection.classList.remove('hidden');
             
-            // Load questions from API
-            await loadQuestions();
+            try {
+                await loadQuestions();
+            } catch (error) {
+                console.error('Error in generateQuestions:', error);
+                alert('Failed to load questions. Please check console for details.');
+            }
         }
 
         async function loadQuestions() {
+            console.log('Loading questions...');
+            
             try {
                 const questions = await fetchQuestions(selectedClass, selectedSubject);
                 
@@ -429,8 +468,8 @@
                 
                 // Load questions for each mark category
                 for (let mark = 1; mark <= 5; mark++) {
-                    const containerId = `${mark}-mark-questions`;
-                    const container = document.getElementById(containerId.replace('-', '-'));
+                    const containerId = `${getMarkWord(mark)}-mark-questions`;
+                    const container = document.getElementById(containerId);
                     
                     if (questions[mark] && questions[mark].length > 0) {
                         questions[mark].forEach((question, index) => {
@@ -442,18 +481,87 @@
                     }
                 }
             } catch (error) {
-                console.error('Error loading questions:', error);
-                alert('Failed to load questions. Please try again later.');
+                console.error('Error in loadQuestions:', error);
+                throw error;
             }
         }
 
-        // [All other functions remain exactly the same:]
-        // createQuestionElement()
-        // previewQuestionPaper()
-        // backToEditing()
-        // downloadAsPdf()
+        function getMarkWord(mark) {
+            const words = ['one', 'two', 'three', 'four', 'five'];
+            return words[mark - 1] || '';
+        }
+
+        function createQuestionElement(question, markValue, index) {
+            const questionElement = document.createElement('div');
+            questionElement.className = 'question-item';
+            questionElement.innerHTML = `
+                <div class="question-text">${index + 1}. ${question.text}</div>
+                <div class="question-marks">
+                    <div class="mark-btn" data-mark="${markValue}" data-id="${question.id}">✓</div>
+                </div>
+            `;
+            return questionElement;
+        }
+
+        function previewQuestionPaper() {
+            console.log('Previewing question paper');
+            
+            // Update preview section with selected data
+            document.getElementById('preview-title').textContent = `${selectedSubject} Question Paper - Class ${selectedClass}`;
+            document.getElementById('preview-school').textContent = document.getElementById('school-name').value;
+            document.getElementById('preview-instructions').textContent = document.getElementById('instructions').value;
+            
+            // Generate preview content
+            const previewSections = document.getElementById('preview-sections');
+            previewSections.innerHTML = '';
+            
+            for (let mark = 1; mark <= 5; mark++) {
+                if (selectedQuestions[mark].length > 0) {
+                    const section = document.createElement('div');
+                    section.className = 'preview-section';
+                    section.innerHTML = `<h3>Section ${String.fromCharCode(64 + mark)} (${mark} Mark Questions)</h3>`;
+                    
+                    selectedQuestions[mark].forEach((question, index) => {
+                        const questionElement = document.createElement('div');
+                        questionElement.className = 'preview-question';
+                        questionElement.innerHTML = `
+                            <div class="preview-question-number">${index + 1}.</div>
+                            <div class="preview-question-text">${question.text}</div>
+                        `;
+                        section.appendChild(questionElement);
+                    });
+                    
+                    previewSections.appendChild(section);
+                }
+            }
+            
+            questionsSection.classList.add('hidden');
+            previewSection.classList.remove('hidden');
+        }
+
+        function backToEditing() {
+            previewSection.classList.add('hidden');
+            questionsSection.classList.remove('hidden');
+        }
+
+        function downloadAsPdf() {
+            console.log('Downloading as PDF');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Get the HTML content to convert to PDF
+            const element = document.getElementById('pdf-content');
+            
+            html2canvas(element).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = doc.internal.pageSize.getWidth() - 20;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                doc.save(`QuestionPaper_Class${selectedClass}_${selectedSubject}.pdf`);
+            });
+        }
     </script>
 </body>
 </html>
-
-
